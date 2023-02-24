@@ -28,4 +28,21 @@ public class AudioManager : MonoBehaviour
         sfx[sfxToPlay].Stop();
         sfx[sfxToPlay].Play();
     }
+    public void FlySFX()
+    {
+        PlaySFX(1);
+    }
+    public void GetScoreSFX()
+    {
+        PlaySFX(0);
+    }
+    public void HitPipesSFX()
+    {
+        PlaySFX(2);
+    }
+
+    public void SwooshingSFX()
+    {
+        PlaySFX(3);
+    }
 }

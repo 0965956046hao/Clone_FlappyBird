@@ -1,4 +1,4 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -9,22 +9,25 @@ public class GameManager : MonoBehaviour
     public int score;
     public int currentPipe;
     public List<GameObject> listPipes = new List<GameObject>();
-    public float currentPipeX;
-    public float currentPipeY;
-    public float birdX;
-    public float birdY;
+    public List<Sprite> listSkin = new List<Sprite>();
+    private float currentPipeX;
+    private float currentPipeY;
+    private float birdX;
+    private float birdY;
     public bool isStart;
     public int scoreToShortenPipes;
+    public int scoreToWin;
     public GameObject birdAtWin;
     public GameObject heartAtWin;
     public float waitToWinLoad;
     private float winLoadCounter;
     public GameObject pipes;
     private int[] ranked = { 90, 85, 80, 77, 60, 60, 50, 25, 10, 5, 5 };
-    private int myRanked;
-    public float waitToContinute;
-    private float continuteLoadCounter;
-    private bool isContinute;
+    public int highScore;
+    public int myRanked;
+    public bool isPause;
+    public bool isContinute;
+    public int currentSkin;
 
 
     private void Awake()
@@ -35,13 +38,14 @@ public class GameManager : MonoBehaviour
     void Start()
     {
         myRanked = 1;
-        scoreToShortenPipes = 25;
         Time.timeScale = 1f;
         isStart = false;
+        isPause = false;
         score = 0;
         currentPipe = 0;
+        currentSkin = PlayerPrefs.GetInt("Skin");
+        LoadSkin(currentSkin);
         winLoadCounter = waitToWinLoad;
-        continuteLoadCounter = waitToContinute;
         listPipes = MapParallax.instance.listPipes;
     }
 
@@ -50,9 +54,10 @@ public class GameManager : MonoBehaviour
     {
         GetCurrentPipeAndScore();
         PipesTrigger();
-        if(score == 100)
+        if(score == scoreToWin)
             WinGame();
-        WaitToContinute();
+        if(isPause)
+            CanvasManager.instance.WaitToContinute();
     }
 
     private void GetCurrentPipeAndScore()
@@ -62,7 +67,7 @@ public class GameManager : MonoBehaviour
             if (Vector3.Distance(item.transform.position, BirdMove.instance.transform.position) < Vector3.Distance(listPipes[currentPipe].transform.position, BirdMove.instance.transform.position))
             {
                 currentPipe = listPipes.IndexOf(item);
-                AudioManager.instance.PlaySFX(0);
+                AudioManager.instance.GetScoreSFX();
                 score++;
             }
         }
@@ -91,21 +96,17 @@ public class GameManager : MonoBehaviour
     public void StartGame()
     {
         isStart = true;
-        CanvasManager.instance.score.gameObject.SetActive(true);
-        CanvasManager.instance.startScreen.gameObject.SetActive(false);
-        CanvasManager.instance.pauseButton.gameObject.SetActive(true);
+        CanvasManager.instance.StartGame();
         BirdMove.instance.theBody.transform.position = new Vector3(-1.4f, 0f, 0f);
     }
 
     public void StopGame()
     {
+        // gọi sound efect 1 lần không bị lặp lại
         if(isStart)
-            AudioManager.instance.PlaySFX(2);
+            AudioManager.instance.HitPipesSFX();
         //Time.timeScale = 0f;
         isStart = false;
-        CanvasManager.instance.deadScreen.gameObject.SetActive(true);
-        CanvasManager.instance.score.gameObject.SetActive(false);
-
         if (PlayerPrefs.HasKey("HighScore"))
         {
             if (PlayerPrefs.GetInt("HighScore") < score)
@@ -115,16 +116,13 @@ public class GameManager : MonoBehaviour
         }
         else
             SetNewHighScore();
-        
-        CanvasManager.instance.highScore.text = PlayerPrefs.GetInt("HighScore").ToString();
-        CanvasManager.instance.pauseButton.gameObject.SetActive(false);
+        CanvasManager.instance.FailGame();
     } 
     
     public void SetNewHighScore()
     {
         CanvasManager.instance.newImg.gameObject.SetActive(true);
         PlayerPrefs.SetInt("HighScore", score);
-        
     }
 
     public void Restart()
@@ -135,6 +133,8 @@ public class GameManager : MonoBehaviour
     public void WinGame()
     {
        isStart = false;
+
+       // tạo cut scense khi thắng ( 1 con chim nữ bay lại gần hiện lên trái tim
        birdAtWin.gameObject.SetActive(true);
        pipes.gameObject.SetActive(false);
        BirdMove.instance.theBody.transform.position = new Vector3(BirdMove.instance.theBody.transform.position.x, 0f, 0f);
@@ -151,16 +151,14 @@ public class GameManager : MonoBehaviour
        else
        {
            winLoadCounter = waitToWinLoad;
-           CanvasManager.instance.winScreen.gameObject.SetActive(true);
-           CanvasManager.instance.score.gameObject.SetActive(false);
+           CanvasManager.instance.WinGame();
        }
     }
 
     public void ShowRanked()
     {
-        int stt = 2;
-        int highScore = PlayerPrefs.GetInt("HighScore");
-        CanvasManager.instance.listRanked.text += 1 + ": Score " + ranked[0].ToString() + "\n";
+        // Tính my rank
+        highScore = PlayerPrefs.GetInt("HighScore");
         if (highScore < ranked[0])
         {
             myRanked++;
@@ -170,24 +168,24 @@ public class GameManager : MonoBehaviour
                     myRanked++;
             }
         }
+        // show list rank
+        CanvasManager.instance.listRanked.text += 1 + ": Score " + ranked[0].ToString() + "\n";
+        int stt = 2;
         for (int i = 1; i < ranked.Length; i++)
         {
             CanvasManager.instance.listRanked.text += stt + ": Score " + ranked[i].ToString() + "\n";
             if (ranked[i] != ranked[i - 1])
                 stt++;
         }
-        CanvasManager.instance.myHighScore.text = highScore.ToString();
-        CanvasManager.instance.myRank.text = myRanked.ToString();
-        CanvasManager.instance.rankedScreen.gameObject.SetActive(true);
-        CanvasManager.instance.pauseButton.gameObject.SetActive(true);
+        CanvasManager.instance.ShowRanked();
     }
 
     public void PauseGame()
     {
         Time.timeScale = 0f;
         isStart = false;
-        CanvasManager.instance.pauseScreen.gameObject.SetActive(true);
-        CanvasManager.instance.pauseButton.gameObject.SetActive(false);
+        isPause = true;
+        CanvasManager.instance.PauseGame();
     }
 
     public void ContinuteGame()
@@ -195,38 +193,43 @@ public class GameManager : MonoBehaviour
         isContinute = true;
     }
 
-    public void ExitRanked()
+    public void NextSkin()
     {
-        CanvasManager.instance.rankedScreen.gameObject.SetActive(false);
-    }
-
-    public void WaitToContinute()
-    {
-        if (isContinute)
+        if (currentSkin == listSkin.Count-1)
         {
-            Time.timeScale = 1f;
-            if (continuteLoadCounter > 0)
-            {
-                CanvasManager.instance.continuteCooldown.text = continuteLoadCounter.ToString();
-                continuteLoadCounter -= Time.deltaTime;
-                
-            }
-            else
-            {
-                isStart = true;
-                CanvasManager.instance.pauseScreen.gameObject.SetActive(false);
-                CanvasManager.instance.pauseButton.gameObject.SetActive(true);
-                continuteLoadCounter = waitToContinute;
-                isContinute = false;
-            }
-            CanvasManager.instance.continuteButton.gameObject.SetActive(false);
-            CanvasManager.instance.continuteCooldown.gameObject.SetActive(true);
+            currentSkin = 0;
         }
         else
         {
-            CanvasManager.instance.continuteButton.gameObject.SetActive(true);
-            CanvasManager.instance.continuteCooldown.gameObject.SetActive(false);
-        }    
-            
+            currentSkin++;
+        }
+        AudioManager.instance.SwooshingSFX();
+        LoadSkin(currentSkin);
     }
+
+    public void PrevousSkin()
+    {
+        if (currentSkin == 0)
+        {
+            currentSkin = listSkin.Count - 1;
+        }
+        else
+        {
+            currentSkin--;
+        }
+        AudioManager.instance.SwooshingSFX();
+        LoadSkin(currentSkin);
+    }
+
+    public void LoadSkin(int current)
+    {
+        if (current != 0)
+            BirdMove.instance.GetComponent<Animator>().enabled = false;
+        else
+            BirdMove.instance.GetComponent<Animator>().enabled = true;
+
+        PlayerPrefs.SetInt("Skin", current);
+        BirdMove.instance.theBody.GetComponent<SpriteRenderer>().sprite = listSkin[current];
+    }    
+
 }

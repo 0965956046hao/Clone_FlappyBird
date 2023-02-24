@@ -23,7 +23,7 @@ public class Pipe : MonoBehaviour
     }
     private void OnInvisible()
     {
-        if(transform.position.x <= -3.5 && GameManager.instance.score < 100)
+        if(transform.position.x <= -3.5 && GameManager.instance.score < GameManager.instance.scoreToWin)
         {
             // thu ngắn khoảng cách của các ống khi đạt được mức điểm tương ứng
             if(GameManager.instance.score >= GameManager.instance.scoreToShortenPipes)

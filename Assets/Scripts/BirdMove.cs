@@ -46,7 +46,7 @@ public class BirdMove : MonoBehaviour
     {
         if (Input.GetMouseButtonDown(0))
         {
-            AudioManager.instance.PlaySFX(1);
+            AudioManager.instance.FlySFX();
             isFly = true;
         }
 

@@ -22,6 +22,9 @@ public class CanvasManager : MonoBehaviour
     public Text continuteCooldown;
     public Image continuteButton;
 
+    public float waitToContinute;
+    private float continuteLoadCounter;
+
     // Start is called before the first frame update
     private void Awake()
     {
@@ -36,6 +39,8 @@ public class CanvasManager : MonoBehaviour
         deadScreen.gameObject.SetActive(false);
         score.gameObject.SetActive(false);
         rankedScreen.gameObject.SetActive(false);
+
+        continuteLoadCounter = waitToContinute;
         score.text = "0";
     }
 
@@ -45,5 +50,76 @@ public class CanvasManager : MonoBehaviour
     {
         score.text = GameManager.instance.score.ToString();
         ScoreOnTable.text = score.text;
+    }
+
+    public void StartGame()
+    {
+        score.gameObject.SetActive(true);
+        startScreen.gameObject.SetActive(false);
+        pauseButton.gameObject.SetActive(true);
+    }
+
+    public void FailGame()
+    {
+        deadScreen.gameObject.SetActive(true);
+        score.gameObject.SetActive(false);
+        highScore.text = PlayerPrefs.GetInt("HighScore").ToString();
+        pauseButton.gameObject.SetActive(false);
+    }
+
+    public void WinGame()
+    {
+        winScreen.gameObject.SetActive(true);
+        pauseButton.gameObject.SetActive(false);
+        score.gameObject.SetActive(false);
+    }    
+    
+    public void ShowRanked()
+    {
+        myHighScore.text = GameManager.instance.highScore.ToString();
+        myRank.text = GameManager.instance.myRanked.ToString();
+        rankedScreen.gameObject.SetActive(true);
+        pauseButton.gameObject.SetActive(true);
+    }
+
+    public void PauseGame()
+    {
+        pauseScreen.gameObject.SetActive(true);
+        pauseButton.gameObject.SetActive(false);
+    }
+
+    public void ExitRanked()
+    {
+        rankedScreen.gameObject.SetActive(false);
+    }
+
+    public void WaitToContinute()
+    {
+        if (GameManager.instance.isContinute)
+        {
+            Time.timeScale = 1f;
+            if (continuteLoadCounter > 0)
+            {
+                continuteCooldown.text = continuteLoadCounter.ToString();
+                continuteLoadCounter -= Time.deltaTime;
+
+            }
+            else
+            {
+                GameManager.instance.isStart = true;
+                pauseScreen.gameObject.SetActive(false);
+                pauseButton.gameObject.SetActive(true);
+                continuteLoadCounter = waitToContinute;
+                GameManager.instance.isContinute = false;
+                GameManager.instance.isPause = false;
+            }
+            continuteButton.gameObject.SetActive(false);
+            continuteCooldown.gameObject.SetActive(true);
+        }
+        else
+        {
+            continuteButton.gameObject.SetActive(true);
+            continuteCooldown.gameObject.SetActive(false);
+        }
     }
 }
